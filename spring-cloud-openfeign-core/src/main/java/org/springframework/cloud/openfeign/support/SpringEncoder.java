@@ -97,28 +97,28 @@ public class SpringEncoder implements Encoder {
                 }
             }
 
-            if (request.methodMetadata().isFormModule()) {
-
-                JSONObject data = (JSONObject)JSONObject.toJSON(requestBody);
-
-                Map<String, Object> sendData = new HashMap<String, Object>();
-
-                for (Entry<String, Object> ens : data.entrySet()) {
-                    if (ens.getValue() instanceof JSONObject) {
-                        sendData.put(ens.getKey(), ((JSONObject)ens.getValue()).toJSONString());
-                    }
-                    if (ens.getValue() instanceof JSONArray) {
-                        sendData.put(ens.getKey(), ((JSONArray)ens.getValue()).toJSONString());
-                    } else {
-                        sendData.put(ens.getKey(), ens.getValue());
-                    }
-
-                }
-
-                this.springFormEncoder.encode(sendData, Util.MAP_STRING_WILDCARD, request);
-
-                return;
-            }
+//            if (request.methodMetadata().isFormModule()) {
+//
+//                JSONObject data = (JSONObject)JSONObject.toJSON(requestBody);
+//
+//                Map<String, Object> sendData = new HashMap<String, Object>();
+//
+//                for (Entry<String, Object> ens : data.entrySet()) {
+//                    if (ens.getValue() instanceof JSONObject) {
+//                        sendData.put(ens.getKey(), ((JSONObject)ens.getValue()).toJSONString());
+//                    }
+//                    if (ens.getValue() instanceof JSONArray) {
+//                        sendData.put(ens.getKey(), ((JSONArray)ens.getValue()).toJSONString());
+//                    } else {
+//                        sendData.put(ens.getKey(), ens.getValue());
+//                    }
+//
+//                }
+//
+//                this.springFormEncoder.encode(sendData, Util.MAP_STRING_WILDCARD, request);
+//
+//                return;
+//            }
 
             for (HttpMessageConverter messageConverter : this.messageConverters.getObject().getConverters()) {
                 FeignOutputMessage outputMessage;
@@ -161,14 +161,27 @@ public class SpringEncoder implements Encoder {
 
     @SuppressWarnings("unchecked")
     private FeignOutputMessage checkAndWrite (Object body, MediaType contentType, HttpMessageConverter converter, RequestTemplate request) throws IOException {
-        if (converter.canWrite(body.getClass(), contentType)) {
-            logBeforeWrite(body, contentType, converter);
-            FeignOutputMessage outputMessage = new FeignOutputMessage(request);
-            converter.write(body, contentType, outputMessage);
-            return outputMessage;
-        } else {
-            return null;
+        
+        if(request.methodMetadata().isFormModule()) {
+            contentType=MediaType.APPLICATION_JSON_UTF8;
+            JSONObject data = (JSONObject)JSONObject.toJSON(body);
+            body = data.toJSONString();
         }
+        
+        {
+            if (converter.canWrite(body.getClass(), contentType)) {
+                logBeforeWrite(body, contentType, converter);
+                FeignOutputMessage outputMessage = new FeignOutputMessage(request);
+                converter.write(body, contentType, outputMessage);
+                return outputMessage;
+            } else {
+                return null;
+            } 
+        }
+        
+        
+        
+        
     }
 
     @SuppressWarnings("unchecked")
