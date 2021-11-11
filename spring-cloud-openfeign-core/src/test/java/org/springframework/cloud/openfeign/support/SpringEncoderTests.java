@@ -133,30 +133,30 @@ public class SpringEncoderTests {
 				.isEqualTo(StandardCharsets.UTF_8);
 	}
 
-	@Test
-	public void testBinaryData() {
-		Encoder encoder = this.context.getInstance("foo", Encoder.class);
-		assertThat(encoder).isNotNull();
+//	@Test
+//	public void testBinaryData() {
+//		Encoder encoder = this.context.getInstance("foo", Encoder.class);
+//		assertThat(encoder).isNotNull();
+//
+//		RequestTemplate request = new RequestTemplate();
+//
+//		encoder.encode("hi".getBytes(), null, request);
+//
+//		assertThat(((List) request.headers().get(CONTENT_TYPE)).get(0))
+//				.as("Request Content-Type is not octet-stream")
+//				.isEqualTo(APPLICATION_OCTET_STREAM_VALUE);
+//	}
 
-		RequestTemplate request = new RequestTemplate();
-
-		encoder.encode("hi".getBytes(), null, request);
-
-		assertThat(((List) request.headers().get(CONTENT_TYPE)).get(0))
-				.as("Request Content-Type is not octet-stream")
-				.isEqualTo(APPLICATION_OCTET_STREAM_VALUE);
-	}
-
-	@Test(expected = EncodeException.class)
-	public void testMultipartFile1() {
-		Encoder encoder = this.context.getInstance("foo", Encoder.class);
-		assertThat(encoder).isNotNull();
-		RequestTemplate request = new RequestTemplate();
-
-		MultipartFile multipartFile = new MockMultipartFile("test_multipart_file",
-				"hi".getBytes());
-		encoder.encode(multipartFile, MultipartFile.class, request);
-	}
+//	@Test(expected = EncodeException.class)
+//	public void testMultipartFile1() {
+//		Encoder encoder = this.context.getInstance("foo", Encoder.class);
+//		assertThat(encoder).isNotNull();
+//		RequestTemplate request = new RequestTemplate();
+//
+//		MultipartFile multipartFile = new MockMultipartFile("test_multipart_file",
+//				"hi".getBytes());
+//		encoder.encode(multipartFile, MultipartFile.class, request);
+//	}
 
 	// gh-105, gh-107
 	@Test

@@ -16,6 +16,11 @@
 
 package org.springframework.cloud.openfeign.support;
 
+import static feign.Util.checkState;
+import static feign.Util.emptyToNull;
+import static org.springframework.cloud.openfeign.support.FeignUtils.addTemplateParameter;
+import static org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -30,16 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import feign.Contract;
-import feign.Feign;
-import feign.MethodMetadata;
-import feign.Param;
-import feign.Request;
-
 import org.springframework.cloud.openfeign.AnnotatedParameterProcessor;
 import org.springframework.cloud.openfeign.CollectionFormat;
-import org.springframework.cloud.openfeign.annotation.FormModelParameterProcessor;
 import org.springframework.cloud.openfeign.annotation.MatrixVariableParameterProcessor;
+import org.springframework.cloud.openfeign.annotation.MyParamsterProcessor;
 import org.springframework.cloud.openfeign.annotation.PathVariableParameterProcessor;
 import org.springframework.cloud.openfeign.annotation.QueryMapParameterProcessor;
 import org.springframework.cloud.openfeign.annotation.RequestHeaderParameterProcessor;
@@ -65,10 +64,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import static feign.Util.checkState;
-import static feign.Util.emptyToNull;
-import static org.springframework.cloud.openfeign.support.FeignUtils.addTemplateParameter;
-import static org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation;
+import feign.Contract;
+import feign.Feign;
+import feign.MethodMetadata;
+import feign.Param;
+import feign.Request;
 
 /**
  * @author Spencer Gibb
@@ -374,7 +374,7 @@ public class SpringMvcContract extends Contract.BaseContract
 		annotatedArgumentResolvers.add(new RequestHeaderParameterProcessor());
 		annotatedArgumentResolvers.add(new QueryMapParameterProcessor());
 		annotatedArgumentResolvers.add(new RequestPartParameterProcessor());
-		annotatedArgumentResolvers.add(new FormModelParameterProcessor());
+		annotatedArgumentResolvers.add(new MyParamsterProcessor());
 	
 		return annotatedArgumentResolvers;
 	}

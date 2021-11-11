@@ -9,15 +9,13 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.springframework.cloud.openfeign.AnnotatedParameterProcessor;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.cloud.openfeign.thirds.MyParams;
 
-import cn.oxo.iworks.web.controller.bind.annotation.FormModel;
 import feign.MethodMetadata;
 
-public class FormModelParameterProcessor implements AnnotatedParameterProcessor {
+public class MyParamsterProcessor implements AnnotatedParameterProcessor {
 
-    private static final Class<FormModel> ANNOTATION = FormModel.class;
+    private static final Class<MyParams> ANNOTATION = MyParams.class;
 
     @Override
     public Class<? extends Annotation> getAnnotationType () {
@@ -27,8 +25,8 @@ public class FormModelParameterProcessor implements AnnotatedParameterProcessor 
 
     @Override
     public boolean processArgument (AnnotatedParameterContext context, Annotation annotation, Method method) {
-        FormModel requestParam = ANNOTATION.cast(annotation);
-        String name = requestParam.parameterName();
+        MyParams requestParam = ANNOTATION.cast(annotation);
+        String name = requestParam.name();
         checkState(emptyToNull(name) != null, "FormModel.value() was empty on parameter %s", context.getParameterIndex());
         context.setParameterName(name);
 
