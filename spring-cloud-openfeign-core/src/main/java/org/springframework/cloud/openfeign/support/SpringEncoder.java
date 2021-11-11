@@ -1,17 +1,11 @@
 /*
  * Copyright 2013-2020 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.cloud.openfeign.support;
@@ -23,10 +17,15 @@ import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 
 import feign.Request;
 import feign.RequestTemplate;
+import feign.Util;
 import feign.codec.EncodeException;
 import feign.codec.Encoder;
 import feign.form.spring.SpringFormEncoder;
@@ -46,6 +45,9 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.protobuf.ProtobufHttpMessageConverter;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import static org.springframework.cloud.openfeign.support.FeignUtils.getHeaders;
 import static org.springframework.cloud.openfeign.support.FeignUtils.getHttpHeaders;
 
@@ -58,167 +60,163 @@ import static org.springframework.cloud.openfeign.support.FeignUtils.getHttpHead
  */
 public class SpringEncoder implements Encoder {
 
-	private static final Log log = LogFactory.getLog(SpringEncoder.class);
+    private static final Log log = LogFactory.getLog(SpringEncoder.class);
 
-	private final SpringFormEncoder springFormEncoder;
+    private final SpringFormEncoder springFormEncoder;
 
-	private final ObjectFactory<HttpMessageConverters> messageConverters;
+    private final ObjectFactory<HttpMessageConverters> messageConverters;
 
-	public SpringEncoder(ObjectFactory<HttpMessageConverters> messageConverters) {
-		this.springFormEncoder = new SpringFormEncoder();
-		this.messageConverters = messageConverters;
-	}
+    public SpringEncoder(ObjectFactory<HttpMessageConverters> messageConverters) {
+        this.springFormEncoder = new SpringFormEncoder();
+        this.messageConverters = messageConverters;
+    }
 
-	public SpringEncoder(SpringFormEncoder springFormEncoder,
-			ObjectFactory<HttpMessageConverters> messageConverters) {
-		this.springFormEncoder = springFormEncoder;
-		this.messageConverters = messageConverters;
-	}
+    public SpringEncoder(SpringFormEncoder springFormEncoder, ObjectFactory<HttpMessageConverters> messageConverters) {
+        this.springFormEncoder = springFormEncoder;
+        this.messageConverters = messageConverters;
+    }
 
-	@Override
-	public void encode(Object requestBody, Type bodyType, RequestTemplate request)
-			throws EncodeException {
-		// template.body(conversionService.convert(object, String.class));
-		if (requestBody != null) {
-			Collection<String> contentTypes = request.headers()
-					.get(HttpEncoding.CONTENT_TYPE);
+    @Override
+    public void encode (Object requestBody, Type bodyType, RequestTemplate request) throws EncodeException {
+        // template.body(conversionService.convert(object, String.class));
+        if (requestBody != null) {
+            Collection<String> contentTypes = request.headers().get(HttpEncoding.CONTENT_TYPE);
 
-			MediaType requestContentType = null;
-			if (contentTypes != null && !contentTypes.isEmpty()) {
-				String type = contentTypes.iterator().next();
-				requestContentType = MediaType.valueOf(type);
-			}
+            MediaType requestContentType = null;
+            if (contentTypes != null && !contentTypes.isEmpty()) {
+                String type = contentTypes.iterator().next();
+                requestContentType = MediaType.valueOf(type);
+            }
 
-			if (Objects.equals(requestContentType, MediaType.MULTIPART_FORM_DATA)) {
-				this.springFormEncoder.encode(requestBody, bodyType, request);
-				return;
-			}
-			else {
-				if (bodyType == MultipartFile.class) {
-					log.warn(
-							"For MultipartFile to be handled correctly, the 'consumes' parameter of @RequestMapping "
-									+ "should be specified as MediaType.MULTIPART_FORM_DATA_VALUE");
-				}
-			}
+            if (Objects.equals(requestContentType, MediaType.MULTIPART_FORM_DATA)) {
+                this.springFormEncoder.encode(requestBody, bodyType, request);
+                return;
+            } else {
+                if (bodyType == MultipartFile.class) {
+                    log.warn("For MultipartFile to be handled correctly, the 'consumes' parameter of @RequestMapping " + "should be specified as MediaType.MULTIPART_FORM_DATA_VALUE");
+                }
+            }
 
-			for (HttpMessageConverter messageConverter : this.messageConverters
-					.getObject().getConverters()) {
-				FeignOutputMessage outputMessage;
-				try {
-					if (messageConverter instanceof GenericHttpMessageConverter) {
-						outputMessage = checkAndWrite(requestBody, bodyType,
-								requestContentType,
-								(GenericHttpMessageConverter) messageConverter, request);
-					}
-					else {
-						outputMessage = checkAndWrite(requestBody, requestContentType,
-								messageConverter, request);
-					}
-				}
-				catch (IOException | HttpMessageConversionException ex) {
-					throw new EncodeException("Error converting request body", ex);
-				}
-				if (outputMessage != null) {
-					// clear headers
-					request.headers(null);
-					// converters can modify headers, so update the request
-					// with the modified headers
-					request.headers(getHeaders(outputMessage.getHeaders()));
+            if (request.methodMetadata().isFormModule()) {
 
-					// do not use charset for binary data and protobuf
-					Charset charset;
-					if (messageConverter instanceof ByteArrayHttpMessageConverter) {
-						charset = null;
-					}
-					else if (messageConverter instanceof ProtobufHttpMessageConverter
-							&& ProtobufHttpMessageConverter.PROTOBUF.isCompatibleWith(
-									outputMessage.getHeaders().getContentType())) {
-						charset = null;
-					}
-					else {
-						charset = StandardCharsets.UTF_8;
-					}
-					request.body(Request.Body.encoded(
-							outputMessage.getOutputStream().toByteArray(), charset));
-					return;
-				}
-			}
-			String message = "Could not write request: no suitable HttpMessageConverter "
-					+ "found for request type [" + requestBody.getClass().getName() + "]";
-			if (requestContentType != null) {
-				message += " and content type [" + requestContentType + "]";
-			}
-			throw new EncodeException(message);
-		}
-	}
+                JSONObject data = (JSONObject)JSONObject.toJSON(requestBody);
 
-	@SuppressWarnings("unchecked")
-	private FeignOutputMessage checkAndWrite(Object body, MediaType contentType,
-			HttpMessageConverter converter, RequestTemplate request) throws IOException {
-		if (converter.canWrite(body.getClass(), contentType)) {
-			logBeforeWrite(body, contentType, converter);
-			FeignOutputMessage outputMessage = new FeignOutputMessage(request);
-			converter.write(body, contentType, outputMessage);
-			return outputMessage;
-		}
-		else {
-			return null;
-		}
-	}
+                Map<String, Object> sendData = new HashMap<String, Object>();
 
-	@SuppressWarnings("unchecked")
-	private FeignOutputMessage checkAndWrite(Object body, Type genericType,
-			MediaType contentType, GenericHttpMessageConverter converter,
-			RequestTemplate request) throws IOException {
-		if (converter.canWrite(genericType, body.getClass(), contentType)) {
-			logBeforeWrite(body, contentType, converter);
-			FeignOutputMessage outputMessage = new FeignOutputMessage(request);
-			converter.write(body, genericType, contentType, outputMessage);
-			return outputMessage;
-		}
-		else {
-			return null;
-		}
-	}
+                for (Entry<String, Object> ens : data.entrySet()) {
+                    if (ens.getValue() instanceof JSONObject) {
+                        sendData.put(ens.getKey(), ((JSONObject)ens.getValue()).toJSONString());
+                    }
+                    if (ens.getValue() instanceof JSONArray) {
+                        sendData.put(ens.getKey(), ((JSONArray)ens.getValue()).toJSONString());
+                    } else {
+                        sendData.put(ens.getKey(), ens.getValue());
+                    }
 
-	private void logBeforeWrite(Object requestBody, MediaType requestContentType,
-			HttpMessageConverter messageConverter) {
-		if (log.isDebugEnabled()) {
-			if (requestContentType != null) {
-				log.debug("Writing [" + requestBody + "] as \"" + requestContentType
-						+ "\" using [" + messageConverter + "]");
-			}
-			else {
-				log.debug(
-						"Writing [" + requestBody + "] using [" + messageConverter + "]");
-			}
-		}
-	}
+                }
 
-	private final class FeignOutputMessage implements HttpOutputMessage {
+                this.springFormEncoder.encode(sendData, Util.MAP_STRING_WILDCARD, request);
 
-		private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                return;
+            }
 
-		private final HttpHeaders httpHeaders;
+            for (HttpMessageConverter messageConverter : this.messageConverters.getObject().getConverters()) {
+                FeignOutputMessage outputMessage;
+                try {
+                    if (messageConverter instanceof GenericHttpMessageConverter) {
+                        outputMessage = checkAndWrite(requestBody, bodyType, requestContentType, (GenericHttpMessageConverter)messageConverter, request);
+                    } else {
+                        outputMessage = checkAndWrite(requestBody, requestContentType, messageConverter, request);
+                    }
+                } catch (IOException | HttpMessageConversionException ex) {
+                    throw new EncodeException("Error converting request body", ex);
+                }
+                if (outputMessage != null) {
+                    // clear headers
+                    request.headers(null);
+                    // converters can modify headers, so update the request
+                    // with the modified headers
+                    request.headers(getHeaders(outputMessage.getHeaders()));
 
-		private FeignOutputMessage(RequestTemplate request) {
-			this.httpHeaders = getHttpHeaders(request.headers());
-		}
+                    // do not use charset for binary data and protobuf
+                    Charset charset;
+                    if (messageConverter instanceof ByteArrayHttpMessageConverter) {
+                        charset = null;
+                    } else if (messageConverter instanceof ProtobufHttpMessageConverter && ProtobufHttpMessageConverter.PROTOBUF.isCompatibleWith(outputMessage.getHeaders().getContentType())) {
+                        charset = null;
+                    } else {
+                        charset = StandardCharsets.UTF_8;
+                    }
+                    request.body(Request.Body.encoded(outputMessage.getOutputStream().toByteArray(), charset));
+                    return;
+                }
+            }
+            String message = "Could not write request: no suitable HttpMessageConverter " + "found for request type [" + requestBody.getClass().getName() + "]";
+            if (requestContentType != null) {
+                message += " and content type [" + requestContentType + "]";
+            }
+            throw new EncodeException(message);
+        }
+    }
 
-		@Override
-		public OutputStream getBody() throws IOException {
-			return this.outputStream;
-		}
+    @SuppressWarnings("unchecked")
+    private FeignOutputMessage checkAndWrite (Object body, MediaType contentType, HttpMessageConverter converter, RequestTemplate request) throws IOException {
+        if (converter.canWrite(body.getClass(), contentType)) {
+            logBeforeWrite(body, contentType, converter);
+            FeignOutputMessage outputMessage = new FeignOutputMessage(request);
+            converter.write(body, contentType, outputMessage);
+            return outputMessage;
+        } else {
+            return null;
+        }
+    }
 
-		@Override
-		public HttpHeaders getHeaders() {
-			return this.httpHeaders;
-		}
+    @SuppressWarnings("unchecked")
+    private FeignOutputMessage checkAndWrite (Object body, Type genericType, MediaType contentType, GenericHttpMessageConverter converter, RequestTemplate request) throws IOException {
+        if (converter.canWrite(genericType, body.getClass(), contentType)) {
+            logBeforeWrite(body, contentType, converter);
+            FeignOutputMessage outputMessage = new FeignOutputMessage(request);
+            converter.write(body, genericType, contentType, outputMessage);
+            return outputMessage;
+        } else {
+            return null;
+        }
+    }
 
-		public ByteArrayOutputStream getOutputStream() {
-			return this.outputStream;
-		}
+    private void logBeforeWrite (Object requestBody, MediaType requestContentType, HttpMessageConverter messageConverter) {
+        if (log.isDebugEnabled()) {
+            if (requestContentType != null) {
+                log.debug("Writing [" + requestBody + "] as \"" + requestContentType + "\" using [" + messageConverter + "]");
+            } else {
+                log.debug("Writing [" + requestBody + "] using [" + messageConverter + "]");
+            }
+        }
+    }
 
-	}
+    private final class FeignOutputMessage implements HttpOutputMessage {
+
+        private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        private final HttpHeaders httpHeaders;
+
+        private FeignOutputMessage(RequestTemplate request) {
+            this.httpHeaders = getHttpHeaders(request.headers());
+        }
+
+        @Override
+        public OutputStream getBody () throws IOException {
+            return this.outputStream;
+        }
+
+        @Override
+        public HttpHeaders getHeaders () {
+            return this.httpHeaders;
+        }
+
+        public ByteArrayOutputStream getOutputStream () {
+            return this.outputStream;
+        }
+
+    }
 
 }
