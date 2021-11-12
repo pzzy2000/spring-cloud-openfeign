@@ -6,6 +6,8 @@ import java.io.PushbackInputStream;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.beanutils.ConvertUtils;
+import org.apache.commons.beanutils.Converter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.core.MethodParameter;
@@ -22,8 +24,6 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
-
 
 public class MYCloudRequestParamMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -51,7 +51,7 @@ public class MYCloudRequestParamMethodArgumentResolver implements HandlerMethodA
         }
 
         MyParams iFormModel = parameter.getParameterAnnotation(MyParams.class);
-        
+
         Object value = data.get(iFormModel.name());
 
         if (value == null) {
@@ -69,12 +69,15 @@ public class MYCloudRequestParamMethodArgumentResolver implements HandlerMethodA
         }
 
         else {
-             
-        
-            return value;
-        }
 
-            
+            Converter iConverter = ConvertUtils.lookup(parameter.getParameterType());
+            if (iConverter != null) {
+                return iConverter.convert(parameter.getParameterType(), value);
+            } else {
+                throw new Exception("not support " + parameter.getParameterType() + "  type class !");
+            }
+
+        }
 
     }
 

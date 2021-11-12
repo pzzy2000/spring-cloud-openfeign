@@ -15,29 +15,28 @@
 	<properties>
 		<main.basedir>${basedir}/..</main.basedir>
 	</properties>
-	
+
 	<repositories>
 		<repository>
 			<id>jitpack.io</id>
 			<url>https://jitpack.io</url>
 		</repository>
 	</repositories>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
 			<version>1.2.75</version>
 		</dependency>
-		<!-- 
+		<!-- <dependency> <groupId>cn.oxo.iworks</groupId> <artifactId>cn.oxo.iworks.web</artifactId> <version>0.0.1</version> <scope>system</scope> <systemPath>${project.basedir}/../lib/cn.oxo.iworks.web-0.0.1.jar</systemPath> 
+			</dependency> -->
 		<dependency>
-			<groupId>cn.oxo.iworks</groupId>
-			<artifactId>cn.oxo.iworks.web</artifactId>
-			<version>0.0.1</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/../lib/cn.oxo.iworks.web-0.0.1.jar</systemPath>
+			<groupId>commons-beanutils</groupId>
+			<artifactId>commons-beanutils</artifactId>
+			<version>1.9.4</version>
 		</dependency>
-		-->
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-autoconfigure</artifactId>
@@ -115,13 +114,7 @@
 			<artifactId>ribbon-loadbalancer</artifactId>
 			<optional>true</optional>
 		</dependency>
-		<!--
-		<dependency>
-			<groupId>io.github.openfeign</groupId>
-			<artifactId>feign-core</artifactId>
-			<optional>true</optional>
-		</dependency>
-		-->
+		<!-- <dependency> <groupId>io.github.openfeign</groupId> <artifactId>feign-core</artifactId> <optional>true</optional> </dependency> -->
 		<dependency>
 			<groupId>com.github.pzzy2000.feign</groupId>
 			<artifactId>feign-core</artifactId>
