@@ -15,6 +15,14 @@
 	<properties>
 		<main.basedir>${basedir}/..</main.basedir>
 	</properties>
+	
+	<repositories>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+	
 	<dependencies>
 		<dependency>
 			<groupId>com.alibaba</groupId>
@@ -107,10 +115,17 @@
 			<artifactId>ribbon-loadbalancer</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!--
 		<dependency>
 			<groupId>io.github.openfeign</groupId>
 			<artifactId>feign-core</artifactId>
 			<optional>true</optional>
+		</dependency>
+		-->
+		<dependency>
+			<groupId>com.github.pzzy2000.feign</groupId>
+			<artifactId>feign-core</artifactId>
+			<version>v10.10.1-myparams-0.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>io.github.openfeign.form</groupId>
