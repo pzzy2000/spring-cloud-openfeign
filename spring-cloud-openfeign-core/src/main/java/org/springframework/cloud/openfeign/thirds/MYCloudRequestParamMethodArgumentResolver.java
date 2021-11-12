@@ -68,9 +68,13 @@ public class MYCloudRequestParamMethodArgumentResolver implements HandlerMethodA
             return ((JSONArray)value).toJavaObject(parameter.getParameterType());
         }
 
-        else
+        else {
+             
+        
+            return value;
+        }
 
-            return parameter.getParameterType().cast(value);
+            
 
     }
 
