@@ -34,6 +34,7 @@ public class MYCloudRequestParamMethodArgumentResolver implements HandlerMethodA
         return parameter.hasParameterAnnotation(MyParams.class);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Object resolveArgument (MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
 
@@ -73,7 +74,15 @@ public class MYCloudRequestParamMethodArgumentResolver implements HandlerMethodA
             Converter iConverter = ConvertUtils.lookup(parameter.getParameterType());
             if (iConverter != null) {
                 return iConverter.convert(parameter.getParameterType(), value);
-            } else {
+            }
+
+            if (parameter.getParameterType().isEnum()) {
+
+                return Enum.valueOf(((Class)parameter.getParameterType()), value.toString());
+
+            }
+
+            {
                 throw new Exception("not support " + parameter.getParameterType() + "  type class !");
             }
 
